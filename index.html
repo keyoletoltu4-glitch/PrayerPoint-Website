@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PrayerPoint</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <a class="brand" href="#home" aria-label="PrayerPoint home">
+        <span class="brand-mark">PP</span>
+        <span class="brand-copy">
+          <span class="brand-name">PrayerPoint</span>
+          <span class="brand-motto">Where Hearts Unite in Prayers</span>
+        </span>
+      </a>
+      <nav aria-label="Main navigation">
+        <a href="#share">Share</a>
+        <a href="#requests">Pray</a>
+        <a href="#connect">Connect</a>
+      </nav>
+    </header>
+
+    <main id="home">
+      <section class="hero" aria-labelledby="page-title">
+        <div class="hero-copy">
+          <p class="eyebrow">A calm space for faith and support</p>
+          <h1 id="page-title">Share prayer points. Stand with one another.</h1>
+          <p>
+            Post what is on your heart, pray for others, and find people who are
+            ready to agree with you in prayer.
+          </p>
+          <div class="hero-actions">
+            <a class="button primary" href="#share">Share a prayer point</a>
+            <a class="button secondary" href="#requests">Pray for someone</a>
+          </div>
+        </div>
+        <aside class="prayer-focus" aria-label="Today's focus">
+          <span>Today's focus</span>
+          <strong>Peace, healing, provision, and renewed hope.</strong>
+        </aside>
+      </section>
+
+      <section class="daily-verse" aria-labelledby="daily-verse-title">
+        <div>
+          <p class="eyebrow">Daily Bible verse</p>
+          <h2 id="daily-verse-title">Scripture for today</h2>
+        </div>
+        <blockquote>
+          <p id="daily-verse-text">Loading today's verse...</p>
+          <cite id="daily-verse-reference"></cite>
+        </blockquote>
+      </section>
+
+      <section class="stats" aria-label="Community prayer activity">
+        <div>
+          <strong id="request-count">0</strong>
+          <span>Prayer points</span>
+        </div>
+        <div>
+          <strong id="prayer-count">0</strong>
+          <span>Prayers offered</span>
+        </div>
+        <div>
+          <strong>24/7</strong>
+          <span>Open for prayer</span>
+        </div>
+      </section>
+
+      <section class="workspace">
+        <form id="share" class="panel prayer-form">
+          <div class="section-heading">
+            <p class="eyebrow">Share</p>
+            <h2>Post a prayer point</h2>
+          </div>
+
+          <label>
+            Your name
+            <input id="name" name="name" placeholder="First name or anonymous" />
+          </label>
+
+          <label class="check-row privacy-row">
+            <input id="post-anonymous" type="checkbox" />
+            <span>Post this prayer request anonymously</span>
+          </label>
+
+          <label>
+            Prayer category <span class="optional-text">optional</span>
+            <select id="category" name="category">
+              <option value="">Choose a category if it fits</option>
+              <option>Healing</option>
+              <option>Family</option>
+              <option>Faith</option>
+              <option>Provision</option>
+              <option>Guidance</option>
+              <option>Protection</option>
+              <option>Peace</option>
+              <option>Work</option>
+              <option>School</option>
+              <option>Marriage</option>
+              <option>Grief</option>
+              <option>Salvation</option>
+              <option>Thanksgiving</option>
+              <option>Other / Personal</option>
+            </select>
+          </label>
+
+          <label>
+            Prayer point
+            <textarea
+              id="message"
+              name="message"
+              rows="5"
+              maxlength="280"
+              placeholder="Write a short request people can pray with you about."
+              required
+            ></textarea>
+          </label>
+
+          <label class="check-row">
+            <input id="open-to-connect" type="checkbox" checked />
+            <span>I am open to someone reaching out to pray with me</span>
+          </label>
+
+          <button class="button primary full" type="submit">Post prayer point</button>
+          <p id="form-note" class="form-note" role="status"></p>
+        </form>
+
+        <section id="requests" class="panel requests-panel" aria-labelledby="requests-title">
+          <div class="section-heading with-filter">
+            <div>
+              <p class="eyebrow">Pray</p>
+              <h2 id="requests-title">Prayer wall</h2>
+            </div>
+            <select id="filter" aria-label="Filter prayer points">
+              <option value="All">All</option>
+              <option>Healing</option>
+              <option>Family</option>
+              <option>Faith</option>
+              <option>Provision</option>
+              <option>Guidance</option>
+              <option>Protection</option>
+              <option>Peace</option>
+              <option>Work</option>
+              <option>School</option>
+              <option>Marriage</option>
+              <option>Grief</option>
+              <option>Salvation</option>
+              <option>Thanksgiving</option>
+              <option>Other / Personal</option>
+            </select>
+          </div>
+          <div id="prayer-list" class="prayer-list"></div>
+        </section>
+      </section>
+
+      <section id="connect" class="connect-band" aria-labelledby="connect-title">
+        <div>
+          <p class="eyebrow">Connect</p>
+          <h2 id="connect-title">Create a prayer moment</h2>
+          <p>
+            Choose a request, send a note of encouragement, or start a small
+            prayer group around a shared need.
+          </p>
+        </div>
+        <div class="connection-options">
+          <button class="connection-card" type="button">
+            <span>01</span>
+            <strong>Pray now</strong>
+            <small>Take one request and pray quietly.</small>
+          </button>
+          <button class="connection-card" type="button">
+            <span>02</span>
+            <strong>Send encouragement</strong>
+            <small>Leave a kind word for the person.</small>
+          </button>
+          <button class="connection-card" type="button">
+            <span>03</span>
+            <strong>Gather a group</strong>
+            <small>Invite others to pray around one topic.</small>
+          </button>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      <p>Prayer Circle is a prototype for community prayer and encouragement.</p>
+    </footer>
+
+    <script src="script.js"></script>
+  </body>
+</html>
