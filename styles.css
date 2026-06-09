@@ -198,6 +198,12 @@ h2 {
   color: var(--white);
 }
 
+.button.outline {
+  background: transparent;
+  border-color: var(--line);
+  color: var(--teal-dark);
+}
+
 .button.full {
   width: 100%;
 }
@@ -278,6 +284,69 @@ h2 {
 }
 
 .stats span {
+  color: var(--muted);
+}
+
+.account-band {
+  align-items: start;
+  background: #ffffff;
+  border-bottom: 1px solid var(--line);
+  display: grid;
+  gap: 24px;
+  grid-template-columns: minmax(220px, 0.8fr) minmax(280px, 1fr) minmax(260px, 0.9fr);
+  padding: clamp(28px, 5vw, 58px) clamp(18px, 5vw, 72px);
+}
+
+.account-band p {
+  color: var(--muted);
+  line-height: 1.6;
+  margin-bottom: 0;
+}
+
+.auth-panel,
+.encouragement-inbox {
+  background: var(--soft);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  display: grid;
+  gap: 14px;
+  padding: 18px;
+}
+
+.auth-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.encouragement-inbox h3 {
+  color: var(--teal-dark);
+  font-family: var(--display-font);
+  font-size: 1.35rem;
+  margin: 0;
+}
+
+.encouragement-list {
+  display: grid;
+  gap: 10px;
+}
+
+.encouragement-note {
+  background: var(--white);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+}
+
+.encouragement-note p {
+  color: var(--ink);
+  margin: 0;
+}
+
+.encouragement-note small,
+.muted-note {
   color: var(--muted);
 }
 
@@ -384,6 +453,14 @@ input:disabled {
   color: var(--teal-dark);
   margin: 0;
   min-height: 1.4em;
+}
+
+.form-note.error {
+  color: #a33d35;
+}
+
+.hidden {
+  display: none !important;
 }
 
 .requests-panel {
@@ -539,6 +616,7 @@ footer {
 @media (max-width: 900px) {
   .hero,
   .daily-verse,
+  .account-band,
   .workspace,
   .connect-band {
     grid-template-columns: 1fr;

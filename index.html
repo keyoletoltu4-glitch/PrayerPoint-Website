@@ -68,6 +68,43 @@
         </div>
       </section>
 
+      <section class="account-band" aria-labelledby="account-title">
+        <div>
+          <p class="eyebrow">Account</p>
+          <h2 id="account-title">Sign up to receive encouragement</h2>
+          <p>
+            Create an account so encouragement sent to your prayer requests can
+            come back to you privately.
+          </p>
+        </div>
+        <form id="auth-form" class="auth-panel">
+          <label>
+            Display name
+            <input id="auth-name" name="auth-name" placeholder="Your first name" />
+          </label>
+          <label>
+            Email
+            <input id="auth-email" name="auth-email" type="email" placeholder="you@example.com" />
+          </label>
+          <label>
+            Password
+            <input id="auth-password" name="auth-password" type="password" minlength="6" placeholder="At least 6 characters" />
+          </label>
+          <div class="auth-actions">
+            <button class="button primary" type="button" id="sign-up-button">Sign up</button>
+            <button class="button outline" type="button" id="log-in-button">Log in</button>
+            <button class="button outline hidden" type="button" id="sign-out-button">Sign out</button>
+          </div>
+          <p id="auth-status" class="form-note" role="status">You are browsing as a guest.</p>
+        </form>
+        <aside class="encouragement-inbox" aria-labelledby="inbox-title">
+          <h3 id="inbox-title">Your encouragement</h3>
+          <div id="encouragement-list">
+            <p class="muted-note">Sign in to see encouragement sent to your prayer requests.</p>
+          </div>
+        </aside>
+      </section>
+
       <section class="workspace">
         <form id="share" class="panel prayer-form">
           <div class="section-heading">
@@ -185,9 +222,9 @@
     </main>
 
     <footer>
-      <p>Prayer Circle is a prototype for community prayer and encouragement.</p>
+      <p>PrayerPoint is a community space for prayer and encouragement.</p>
     </footer>
 
-    <script src="script.js"></script>
+    <script type="module" src="script.js"></script>
   </body>
 </html>
