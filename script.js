@@ -87,6 +87,8 @@ const authEmail = document.querySelector("#auth-email");
 const authPassword = document.querySelector("#auth-password");
 const signUpButton = document.querySelector("#sign-up-button");
 const logInButton = document.querySelector("#log-in-button");
+const forgotPasswordButton = document.querySelector("#forgot-password-button");
+const savePasswordButton = document.querySelector("#save-password-button");
 const signOutButton = document.querySelector("#sign-out-button");
 const authStatus = document.querySelector("#auth-status");
 const encouragementList = document.querySelector("#encouragement-list");
@@ -94,6 +96,7 @@ const encouragementList = document.querySelector("#encouragement-list");
 let requests = [];
 let currentUser = null;
 let usingDatabase = true;
+let resettingPassword = false;
 let prayedRequestIds = new Set(JSON.parse(localStorage.getItem(prayedStorageKey) || "[]"));
 
 const loadLocalRequests = () => {
@@ -174,14 +177,18 @@ const renderDailyVerse = () => {
 
 const renderAuth = () => {
   const signedIn = Boolean(currentUser);
-  signUpButton.classList.toggle("hidden", signedIn);
-  logInButton.classList.toggle("hidden", signedIn);
-  signOutButton.classList.toggle("hidden", !signedIn);
+  signUpButton.classList.toggle("hidden", signedIn || resettingPassword);
+  logInButton.classList.toggle("hidden", signedIn || resettingPassword);
+  forgotPasswordButton.classList.toggle("hidden", signedIn || resettingPassword);
+  savePasswordButton.classList.toggle("hidden", !resettingPassword);
+  signOutButton.classList.toggle("hidden", !signedIn || resettingPassword);
   authName.disabled = signedIn;
   authEmail.disabled = signedIn;
-  authPassword.disabled = signedIn;
+  authPassword.disabled = signedIn && !resettingPassword;
 
-  if (signedIn) {
+  if (resettingPassword) {
+    showAuthStatus("Enter a new password, then press Save new password.");
+  } else if (signedIn) {
     const name = currentUser.user_metadata?.display_name || currentUser.email;
     showAuthStatus(`Signed in as ${name}.`);
   } else {
@@ -465,6 +472,47 @@ const logIn = async () => {
   await renderEncouragements();
 };
 
+const sendPasswordReset = async () => {
+  const email = authEmail.value.trim();
+
+  if (!email) {
+    showAuthStatus("Enter your email, then press Forgot password.", true);
+    return;
+  }
+
+  const { error } = await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: "https://keyoletoltu4-glitch.github.io/PrayerPoint-Website/",
+  });
+
+  if (error) {
+    showAuthStatus(error.message, true);
+    return;
+  }
+
+  showAuthStatus("Password reset email sent. Open the link, then set a new password here.");
+};
+
+const saveNewPassword = async () => {
+  const password = authPassword.value;
+
+  if (password.length < 6) {
+    showAuthStatus("Password must be at least 6 characters.", true);
+    return;
+  }
+
+  const { error } = await supabase.auth.updateUser({ password });
+
+  if (error) {
+    showAuthStatus(error.message, true);
+    return;
+  }
+
+  resettingPassword = false;
+  authPassword.value = "";
+  showAuthStatus("Your password has been updated.");
+  renderAuth();
+};
+
 const signOut = async () => {
   await supabase.auth.signOut();
   currentUser = null;
@@ -475,13 +523,17 @@ const signOut = async () => {
 const handleAuthRedirect = async () => {
   const params = new URLSearchParams(window.location.search);
   const code = params.get("code");
+  const type = params.get("type");
 
   if (!code) return;
 
   const { error } = await supabase.auth.exchangeCodeForSession(code);
 
   if (error) {
-    showAuthStatus("Your email was confirmed. Please log in to continue.", true);
+    showAuthStatus("This link was opened. Please log in or request a fresh password reset.", true);
+  } else if (type === "recovery") {
+    resettingPassword = true;
+    showAuthStatus("Enter a new password, then press Save new password.");
   } else {
     showAuthStatus("Your account is confirmed and you are signed in.");
   }
@@ -499,6 +551,8 @@ form.addEventListener("submit", submitPrayerRequest);
 filter.addEventListener("change", renderRequests);
 signUpButton.addEventListener("click", signUp);
 logInButton.addEventListener("click", logIn);
+forgotPasswordButton.addEventListener("click", sendPasswordReset);
+savePasswordButton.addEventListener("click", saveNewPassword);
 signOutButton.addEventListener("click", signOut);
 
 list.addEventListener("click", async (event) => {
