@@ -472,6 +472,23 @@ const signOut = async () => {
   await renderEncouragements();
 };
 
+const handleAuthRedirect = async () => {
+  const params = new URLSearchParams(window.location.search);
+  const code = params.get("code");
+
+  if (!code) return;
+
+  const { error } = await supabase.auth.exchangeCodeForSession(code);
+
+  if (error) {
+    showAuthStatus("Your email was confirmed. Please log in to continue.", true);
+  } else {
+    showAuthStatus("Your account is confirmed and you are signed in.");
+  }
+
+  window.history.replaceState({}, document.title, window.location.pathname);
+};
+
 anonymousInput.addEventListener("change", () => {
   nameInput.disabled = anonymousInput.checked;
   nameInput.value = anonymousInput.checked ? "" : nameInput.value;
@@ -500,6 +517,7 @@ document.querySelectorAll(".connection-card").forEach((button) => {
 
 const initialize = async () => {
   renderDailyVerse();
+  await handleAuthRedirect();
   const { data } = await supabase.auth.getSession();
   currentUser = data.session?.user || null;
   renderAuth();
