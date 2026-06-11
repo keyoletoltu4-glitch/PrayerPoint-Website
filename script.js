@@ -220,6 +220,9 @@ const getShareUrl = (id) => {
   return url.toString();
 };
 
+const getShareText = (request) =>
+  `Please pray for this request on PrayerPoint: "${request.message}"`;
+
 const formatExpiry = (expiresAt) => {
   if (!expiresAt) return "Visible for 7 days";
   const end = new Date(expiresAt).getTime();
@@ -344,6 +347,23 @@ const renderRequests = () => {
           }>Encourage</button>
           <button class="ghost-button" type="button" data-share="${request.id}">Share</button>
           <span class="prayed-count">${request.prayers} prayers</span>
+        </div>
+        <div class="share-panel hidden" id="share-panel-${request.id}" aria-label="Share this prayer request">
+          <button class="ghost-button" type="button" data-copy-link="${request.id}">Copy link</button>
+          <a class="ghost-link" href="${escapeHtml(
+            `https://wa.me/?text=${encodeURIComponent(`${getShareText(request)} ${getShareUrl(request.id)}`)}`,
+          )}" target="_blank" rel="noreferrer">WhatsApp</a>
+          <a class="ghost-link" href="${escapeHtml(
+            `mailto:?subject=${encodeURIComponent("Prayer request from PrayerPoint")}&body=${encodeURIComponent(
+              `${getShareText(request)}\n\n${getShareUrl(request.id)}`,
+            )}`,
+          )}">Email</a>
+          ${
+            navigator.share
+              ? `<button class="ghost-button" type="button" data-native-share="${request.id}">Device share</button>`
+              : ""
+          }
+          <span class="copied-note hidden" id="copied-${request.id}">Copied</span>
         </div>
       `;
       list.append(card);
@@ -493,13 +513,36 @@ const submitPrayerRequest = async (event) => {
 };
 
 const shareRequest = async (id) => {
+  document.querySelectorAll(".share-panel").forEach((panel) => {
+    if (panel.id !== `share-panel-${id}`) panel.classList.add("hidden");
+  });
+  document.querySelector(`#share-panel-${CSS.escape(id)}`)?.classList.toggle("hidden");
+};
+
+const copyShareLink = async (id) => {
   const url = getShareUrl(id);
 
   try {
     await navigator.clipboard.writeText(url);
+    document.querySelector(`#copied-${CSS.escape(id)}`)?.classList.remove("hidden");
     showFormNote("Prayer request link copied. Share it with someone who can pray.");
   } catch (_error) {
     window.prompt("Copy this prayer request link:", url);
+  }
+};
+
+const nativeShareRequest = async (id) => {
+  const request = requests.find((item) => item.id === id);
+  if (!request || !navigator.share) return;
+
+  try {
+    await navigator.share({
+      title: "PrayerPoint prayer request",
+      text: getShareText(request),
+      url: getShareUrl(id),
+    });
+  } catch (_error) {
+    showFormNote("Sharing was cancelled.");
   }
 };
 
@@ -749,10 +792,14 @@ list.addEventListener("click", async (event) => {
   const prayButton = event.target.closest("[data-pray]");
   const encourageButton = event.target.closest("[data-encourage]");
   const shareButton = event.target.closest("[data-share]");
+  const copyButton = event.target.closest("[data-copy-link]");
+  const nativeShareButton = event.target.closest("[data-native-share]");
 
   if (prayButton) await prayForRequest(prayButton.dataset.pray);
   if (encourageButton) await encourageRequest(encourageButton.dataset.encourage);
   if (shareButton) await shareRequest(shareButton.dataset.share);
+  if (copyButton) await copyShareLink(copyButton.dataset.copyLink);
+  if (nativeShareButton) await nativeShareRequest(nativeShareButton.dataset.nativeShare);
 });
 
 document.querySelectorAll(".connection-card").forEach((button) => {
