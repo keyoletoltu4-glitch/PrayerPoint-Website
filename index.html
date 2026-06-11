@@ -18,6 +18,7 @@
       <nav aria-label="Main navigation">
         <a href="#share">Share</a>
         <a href="#requests">Pray</a>
+        <a href="#testimonies">Testimonies</a>
         <a href="#connect">Connect</a>
       </nav>
     </header>
@@ -157,6 +158,16 @@
             ></textarea>
           </label>
 
+          <label>
+            Keep this request on the wall
+            <select id="duration" name="duration">
+              <option value="1">1 day</option>
+              <option value="3">3 days</option>
+              <option value="7" selected>7 days</option>
+              <option value="14">14 days</option>
+            </select>
+          </label>
+
           <label class="check-row">
             <input id="open-to-connect" type="checkbox" checked />
             <span>I am open to someone reaching out to pray with me</span>
@@ -192,6 +203,40 @@
           </div>
           <div id="prayer-list" class="prayer-list"></div>
         </section>
+      </section>
+
+      <section id="testimonies" class="testimony-band" aria-labelledby="testimony-title">
+        <div class="testimony-intro">
+          <p class="eyebrow">Answered prayers</p>
+          <h2 id="testimony-title">Testimonial wall</h2>
+          <p>
+            Share how God answered a prayer and encourage someone who is still waiting.
+          </p>
+        </div>
+
+        <form id="testimony-form" class="panel testimony-form">
+          <label>
+            Your name
+            <input id="testimony-name" name="testimony-name" placeholder="First name or anonymous" />
+          </label>
+          <label>
+            Testimony
+            <textarea
+              id="testimony-message"
+              name="testimony-message"
+              rows="4"
+              maxlength="360"
+              placeholder="Share a short testimony of answered prayer."
+              required
+            ></textarea>
+          </label>
+          <button class="button primary full" type="submit">Share testimony</button>
+          <p id="testimony-note" class="form-note" role="status"></p>
+        </form>
+
+        <div id="testimony-list" class="testimony-list">
+          <div class="empty-state">No testimonies yet. Be the first to share an answered prayer.</div>
+        </div>
       </section>
 
       <section id="connect" class="connect-band" aria-labelledby="connect-title">

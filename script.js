@@ -82,6 +82,7 @@ const dailyVerseReference = document.querySelector("#daily-verse-reference");
 const nameInput = document.querySelector("#name");
 const anonymousInput = document.querySelector("#post-anonymous");
 const openToConnectInput = document.querySelector("#open-to-connect");
+const durationInput = document.querySelector("#duration");
 const authName = document.querySelector("#auth-name");
 const authEmail = document.querySelector("#auth-email");
 const authPassword = document.querySelector("#auth-password");
@@ -92,12 +93,19 @@ const savePasswordButton = document.querySelector("#save-password-button");
 const signOutButton = document.querySelector("#sign-out-button");
 const authStatus = document.querySelector("#auth-status");
 const encouragementList = document.querySelector("#encouragement-list");
+const testimonyForm = document.querySelector("#testimony-form");
+const testimonyName = document.querySelector("#testimony-name");
+const testimonyMessage = document.querySelector("#testimony-message");
+const testimonyNote = document.querySelector("#testimony-note");
+const testimonyList = document.querySelector("#testimony-list");
 
 let requests = [];
+let testimonies = [];
 let currentUser = null;
 let usingDatabase = true;
 let resettingPassword = false;
 let prayedRequestIds = new Set(JSON.parse(localStorage.getItem(prayedStorageKey) || "[]"));
+let signUpCooldownTimer = null;
 
 const loadLocalRequests = () => {
   const saved = localStorage.getItem(storageKey);
@@ -143,6 +151,37 @@ const showAuthStatus = (message, isError = false) => {
   authStatus.classList.toggle("error", isError);
 };
 
+const showTestimonyNote = (message, isError = false) => {
+  testimonyNote.textContent = message;
+  testimonyNote.classList.toggle("error", isError);
+};
+
+const startSignUpCooldown = (seconds = 120) => {
+  clearInterval(signUpCooldownTimer);
+  let remainingSeconds = seconds;
+
+  const updateButton = () => {
+    const minutes = Math.floor(remainingSeconds / 60);
+    const secondsLeft = remainingSeconds % 60;
+    signUpButton.disabled = true;
+    signUpButton.textContent = `Wait ${minutes}:${String(secondsLeft).padStart(2, "0")}`;
+  };
+
+  updateButton();
+  signUpCooldownTimer = setInterval(() => {
+    remainingSeconds -= 1;
+
+    if (remainingSeconds <= 0) {
+      clearInterval(signUpCooldownTimer);
+      signUpButton.disabled = false;
+      signUpButton.textContent = "Sign up";
+      return;
+    }
+
+    updateButton();
+  }, 1000);
+};
+
 const timeAgo = (timestamp) => {
   const time = typeof timestamp === "number" ? timestamp : new Date(timestamp).getTime();
   const minutes = Math.max(1, Math.round((Date.now() - time) / 60000));
@@ -161,7 +200,34 @@ const normalizeRequest = (request) => ({
   openToConnect: request.open_to_connect ?? request.openToConnect ?? true,
   prayers: request.prayers || 0,
   createdAt: request.created_at || request.createdAt || Date.now(),
+  expiresAt: request.expires_at || request.expiresAt || null,
 });
+
+const normalizeTestimony = (testimony) => ({
+  id: testimony.id,
+  name: testimony.display_name || testimony.name || "Anonymous",
+  message: testimony.message,
+  createdAt: testimony.created_at || testimony.createdAt || Date.now(),
+});
+
+const getShareTargetId = () => new URLSearchParams(window.location.search).get("prayer");
+
+const getShareUrl = (id) => {
+  const url = new URL(window.location.href);
+  url.search = "";
+  url.hash = "requests";
+  url.searchParams.set("prayer", id);
+  return url.toString();
+};
+
+const formatExpiry = (expiresAt) => {
+  if (!expiresAt) return "Visible for 7 days";
+  const end = new Date(expiresAt).getTime();
+  const diff = end - Date.now();
+  if (diff <= 0) return "Expires soon";
+  const days = Math.ceil(diff / 86400000);
+  return days === 1 ? "Expires in 1 day" : `Expires in ${days} days`;
+};
 
 const updateStats = () => {
   requestCount.textContent = requests.length;
@@ -235,6 +301,7 @@ const renderEncouragements = async () => {
 
 const renderRequests = () => {
   const activeFilter = filter.value;
+  const shareTargetId = getShareTargetId();
   const visibleRequests =
     activeFilter === "All"
       ? requests
@@ -257,11 +324,14 @@ const renderRequests = () => {
       const category = request.category || "Uncategorized";
       const canEncourage = request.userId && request.openToConnect;
       const alreadyPrayed = prayedRequestIds.has(request.id);
+      card.id = `prayer-${request.id}`;
+      if (shareTargetId === request.id) card.classList.add("highlighted");
       card.innerHTML = `
         <div class="prayer-meta">
           <span class="tag">${escapeHtml(category)}</span>
           <span>${escapeHtml(request.name || "Anonymous")}</span>
           <span>${timeAgo(request.createdAt)}</span>
+          <span>${formatExpiry(request.expiresAt)}</span>
           ${request.openToConnect ? "<span>Open to connect</span>" : ""}
         </div>
         <p>${escapeHtml(request.message)}</p>
@@ -272,11 +342,38 @@ const renderRequests = () => {
           <button class="ghost-button" type="button" data-encourage="${request.id}" ${
             canEncourage ? "" : "disabled"
           }>Encourage</button>
+          <button class="ghost-button" type="button" data-share="${request.id}">Share</button>
           <span class="prayed-count">${request.prayers} prayers</span>
         </div>
       `;
       list.append(card);
     });
+
+  if (shareTargetId) {
+    document.querySelector(`#prayer-${CSS.escape(shareTargetId)}`)?.scrollIntoView({
+      behavior: "smooth",
+      block: "center",
+    });
+  }
+};
+
+const renderTestimonies = () => {
+  if (!testimonies.length) {
+    testimonyList.innerHTML =
+      '<div class="empty-state">No testimonies yet. Be the first to share an answered prayer.</div>';
+    return;
+  }
+
+  testimonyList.innerHTML = testimonies
+    .map(
+      (testimony) => `
+        <article class="testimony-card">
+          <p>${escapeHtml(testimony.message)}</p>
+          <small>${escapeHtml(testimony.name)} · ${timeAgo(testimony.createdAt)}</small>
+        </article>
+      `,
+    )
+    .join("");
 };
 
 const loadRequests = async () => {
@@ -288,7 +385,8 @@ const loadRequests = async () => {
 
   const { data, error } = await supabase
     .from("prayer_requests")
-    .select("id, user_id, display_name, category, message, open_to_connect, prayers, created_at")
+    .select("id, user_id, display_name, category, message, open_to_connect, prayers, created_at, expires_at")
+    .gt("expires_at", new Date().toISOString())
     .order("created_at", { ascending: false });
 
   if (error) {
@@ -300,6 +398,29 @@ const loadRequests = async () => {
   }
 
   renderRequests();
+};
+
+const loadTestimonies = async () => {
+  if (!usingDatabase) {
+    testimonies = [];
+    renderTestimonies();
+    return;
+  }
+
+  const { data, error } = await supabase
+    .from("testimonies")
+    .select("id, display_name, message, created_at")
+    .order("created_at", { ascending: false })
+    .limit(20);
+
+  if (error) {
+    testimonies = [];
+    showTestimonyNote("Testimonies will appear after the database update is complete.", true);
+  } else {
+    testimonies = data.map(normalizeTestimony);
+  }
+
+  renderTestimonies();
 };
 
 const requireSignIn = () => {
@@ -315,6 +436,8 @@ const submitPrayerRequest = async (event) => {
   const message = formData.get("message").trim();
   const isAnonymous = anonymousInput.checked;
   const name = isAnonymous ? "Anonymous" : formData.get("name").trim() || "Anonymous";
+  const durationDays = Number(formData.get("duration") || 7);
+  const expiresAt = new Date(Date.now() + durationDays * 86400000).toISOString();
 
   if (!message) return;
 
@@ -334,6 +457,7 @@ const submitPrayerRequest = async (event) => {
     openToConnect: openToConnectInput.checked,
     prayers: 0,
     createdAt: Date.now(),
+    expiresAt,
   };
 
   if (usingDatabase) {
@@ -344,6 +468,7 @@ const submitPrayerRequest = async (event) => {
       message,
       open_to_connect: newRequest.openToConnect,
       prayers: 0,
+      expires_at: expiresAt,
     });
 
     if (error) {
@@ -364,6 +489,18 @@ const submitPrayerRequest = async (event) => {
   nameInput.disabled = false;
   nameInput.placeholder = "First name or anonymous";
   openToConnectInput.checked = true;
+  durationInput.value = "7";
+};
+
+const shareRequest = async (id) => {
+  const url = getShareUrl(id);
+
+  try {
+    await navigator.clipboard.writeText(url);
+    showFormNote("Prayer request link copied. Share it with someone who can pray.");
+  } catch (_error) {
+    window.prompt("Copy this prayer request link:", url);
+  }
 };
 
 const prayForRequest = async (id) => {
@@ -429,6 +566,49 @@ const encourageRequest = async (id) => {
   showFormNote("Your encouragement was sent privately.");
 };
 
+const submitTestimony = async (event) => {
+  event.preventDefault();
+  const name = testimonyName.value.trim() || "Anonymous";
+  const message = testimonyMessage.value.trim();
+
+  if (!message) return;
+
+  if (hasBlockedWords(`${name} ${message}`)) {
+    showTestimonyNote("Please remove vulgar or offensive words before sharing this testimony.", true);
+    return;
+  }
+
+  if (usingDatabase && !requireSignIn()) return;
+
+  if (usingDatabase) {
+    const { error } = await supabase.from("testimonies").insert({
+      user_id: currentUser.id,
+      display_name: name,
+      message,
+    });
+
+    if (error) {
+      showTestimonyNote("Testimony could not be shared yet. Check the Supabase update.", true);
+      return;
+    }
+
+    showTestimonyNote("Your testimony has been shared.");
+    testimonyForm.reset();
+    await loadTestimonies();
+    return;
+  }
+
+  testimonies.unshift({
+    id: crypto.randomUUID(),
+    name,
+    message,
+    createdAt: Date.now(),
+  });
+  testimonyForm.reset();
+  showTestimonyNote("Your testimony has been added on this device.");
+  renderTestimonies();
+};
+
 const signUp = async () => {
   const email = authEmail.value.trim();
   const password = authPassword.value;
@@ -438,6 +618,9 @@ const signUp = async () => {
     showAuthStatus("Please remove vulgar or offensive words from the display name.", true);
     return;
   }
+
+  startSignUpCooldown();
+  showAuthStatus("Sending confirmation email. Please wait before trying again.");
 
   const { error } = await supabase.auth.signUp({
     email,
@@ -449,7 +632,13 @@ const signUp = async () => {
   });
 
   if (error) {
-    showAuthStatus(error.message, true);
+    const rateLimited = error.message.toLowerCase().includes("rate limit");
+    showAuthStatus(
+      rateLimited
+        ? "Please wait about 2 minutes before requesting another signup email."
+        : error.message,
+      true,
+    );
     return;
   }
 
@@ -548,6 +737,7 @@ anonymousInput.addEventListener("change", () => {
 });
 
 form.addEventListener("submit", submitPrayerRequest);
+testimonyForm.addEventListener("submit", submitTestimony);
 filter.addEventListener("change", renderRequests);
 signUpButton.addEventListener("click", signUp);
 logInButton.addEventListener("click", logIn);
@@ -558,9 +748,11 @@ signOutButton.addEventListener("click", signOut);
 list.addEventListener("click", async (event) => {
   const prayButton = event.target.closest("[data-pray]");
   const encourageButton = event.target.closest("[data-encourage]");
+  const shareButton = event.target.closest("[data-share]");
 
   if (prayButton) await prayForRequest(prayButton.dataset.pray);
   if (encourageButton) await encourageRequest(encourageButton.dataset.encourage);
+  if (shareButton) await shareRequest(shareButton.dataset.share);
 });
 
 document.querySelectorAll(".connection-card").forEach((button) => {
@@ -576,6 +768,7 @@ const initialize = async () => {
   currentUser = data.session?.user || null;
   renderAuth();
   await loadRequests();
+  await loadTestimonies();
   await renderEncouragements();
 
   supabase.auth.onAuthStateChange(async (_event, session) => {
